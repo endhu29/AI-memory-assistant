@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — ElderCare{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block extra_css %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Good day, {{ user.username }}
+    {% if user.profile %} — caring for <strong>{{ user.profile.full_name }}</strong>{% endif %}
+  </h2>
+  <span class="date-badge"><i class="bi bi-calendar3"></i> {{ today.strftime('%d %b %Y') }}</span>
+</div>
+
+<!-- Summary Cards -->
+<div class="card-grid card-grid-4">
+  <div class="metric-card {% if pending_doses > 0 %}metric-warning{% endif %}">
+    <div class="metric-icon"><i class="bi bi-capsule"></i></div>
+    <div class="metric-body">
+      <div class="metric-value">{{ pending_doses }} / {{ total_doses }}</div>
+      <div class="metric-label">Doses Pending Today</div>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-icon metric-blue"><i class="bi bi-calendar2-check"></i></div>
+    <div class="metric-body">
+      {% if next_appt %}
+        <div class="metric-value">{{ next_appt.appointment_dt.strftime('%d %b') }}</div>
+        <div class="metric-label">Dr. {{ next_appt.doctor_name }}</div>
+      {% else %}
+        <div class="metric-value">—</div>
+        <div class="metric-label">No upcoming appointments</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="metric-card {% if latest_health and latest_health.bp_systolic and latest_health.bp_systolic > 140 %}metric-danger{% endif %}">
+    <div class="metric-icon metric-red"><i class="bi bi-heart-pulse"></i></div>
+    <div class="metric-body">
+      {% if latest_health and latest_health.bp_systolic %}
+        <div class="metric-value">{{ latest_health.bp_systolic }}/{{ latest_health.bp_diastolic }}</div>
+        <div class="metric-label">Blood Pressure (mmHg)</div>
+      {% else %}
+        <div class="metric-value">—</div>
+        <div class="metric-label">No BP data yet</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="metric-card {% if latest_health and latest_health.blood_sugar_mgdl and latest_health.blood_sugar_mgdl > 180 %}metric-danger{% endif %}">
+    <div class="metric-icon metric-orange"><i class="bi bi-droplet-fill"></i></div>
+    <div class="metric-body">
+      {% if latest_health and latest_health.blood_sugar_mgdl %}
+        <div class="metric-value">{{ latest_health.blood_sugar_mgdl }}</div>
+        <div class="metric-label">Blood Sugar (mg/dL)</div>
+      {% else %}
+        <div class="metric-value">—</div>
+        <div class="metric-label">No sugar data yet</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="card-grid card-grid-2">
+  <div class="card">
+    <div class="card-header"><h3><i class="bi bi-heart-pulse"></i> Blood Pressure — Last 7 Days</h3></div>
+    <div style="padding:1rem"><canvas id="bpChart" height="140"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3><i class="bi bi-droplet-fill"></i> Blood Sugar — Last 7 Days</h3></div>
+    <div style="padding:1rem"><canvas id="sugarChart" height="140"></canvas></div>
+  </div>
+</div>
+
+<!-- Recent Health Logs -->
+<div class="card">
+  <div class="card-header">
+    <h3><i class="bi bi-clipboard2-pulse"></i> Recent Health Entries</h3>
+    <a href="/health-log" class="btn btn-sm btn-outline">View All</a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Weight</th><th>BP</th><th>Sugar (mg/dL)</th><th>Heart Rate</th><th>Feeling</th></tr></thead>
+      <tbody>
+        {% for log in recent_logs %}
+        <tr>
+          <td>{{ log.log_date.strftime('%d %b %Y') }}</td>
+          <td>{{ log.weight_kg ~ ' kg' if log.weight_kg else '—' }}</td>
+          <td class="{% if log.bp_systolic and log.bp_systolic > 140 %}text-danger{% endif %}">
+            {{ '%s/%s'|format(log.bp_systolic, log.bp_diastolic) if log.bp_systolic else '—' }}</td>
+          <td class="{% if log.blood_sugar_mgdl and log.blood_sugar_mgdl > 180 %}text-danger{% endif %}">
+            {{ log.blood_sugar_mgdl or '—' }}</td>
+          <td>{{ log.heart_rate_bpm or '—' }}</td>
+          <td>{{ '★' * (log.health_feeling or 0) }}{{ '☆' * (5-(log.health_feeling or 0)) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted">No health data yet. <a href="/health-log">Add entry</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Upcoming Appointments -->
+<div class="card">
+  <div class="card-header">
+    <h3><i class="bi bi-calendar2-check"></i> Upcoming Appointments</h3>
+    <a href="/appointments" class="btn btn-sm btn-outline">View All</a>
+  </div>
+  <div class="appt-list">
+    {% for appt in upcoming_appts %}
+    <div class="appt-item">
+      <div class="appt-icon"><i class="bi bi-person-lines-fill"></i></div>
+      <div class="appt-details">
+        <strong>Dr. {{ appt.doctor_name }}</strong>
+        {% if appt.speciality %}<span class="text-muted"> · {{ appt.speciality }}</span>{% endif %}
+        <div class="text-muted">{{ appt.appointment_dt.strftime('%d %b %Y, %I:%M %p') }}
+          {% if appt.hospital %} — {{ appt.hospital }}{% endif %}
+        </div>
+      </div>
+      <span class="badge badge-blue">{{ appt.status }}</span>
+    </div>
+    {% else %}
+    <p class="text-muted text-center" style="padding:1rem">No upcoming appointments. <a href="/appointments">Schedule one</a></p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadCharts() {
+  const res  = await fetch('/api/health-chart-data');
+  const data = await res.json();
+  new Chart(document.getElementById('bpChart'), { type:'line', data:{
+    labels: data.labels,
+    datasets:[
+      {label:'Systolic',  data:data.bp_systolic,  borderColor:'#C0392B', backgroundColor:'rgba(192,57,43,0.1)', tension:0.3},
+      {label:'Diastolic', data:data.bp_diastolic, borderColor:'#2E86C1', backgroundColor:'rgba(46,134,193,0.1)', tension:0.3}
+    ]}, options:{responsive:true}
+  });
+  new Chart(document.getElementById('sugarChart'), { type:'line', data:{
+    labels: data.labels,
+    datasets:[{label:'Blood Sugar (mg/dL)', data:data.blood_sugar,
+      borderColor:'#E67E22', backgroundColor:'rgba(230,126,34,0.1)', tension:0.3}]
+    }, options:{responsive:true}
+  });
+}
+loadCharts();
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Health Log — ElderCare{% endblock %}
+{% block page_title %}Health Log{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-activity"></i> Daily Health Tracking</h2>
+    <button class="btn btn-primary" onclick="openModal('addHealthModal')"><i class="bi bi-plus-lg"></i> Add
+        Entry</button>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Weight</th>
+                    <th>BP</th>
+                    <th>Sugar</th>
+                    <th>HR</th>
+                    <th>SpO2</th>
+                    <th>Temp</th>
+                    <th>Feeling</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.log_date.strftime('%d %b %Y') }}</td>
+                    <td>{{ log.weight_kg ~ ' kg' if log.weight_kg else '—' }}</td>
+                    <td class="{% if log.bp_systolic and log.bp_systolic > 140 %}text-danger{% endif %}">
+                        {{ '%s/%s'|format(log.bp_systolic,log.bp_diastolic) if log.bp_systolic else '—' }}</td>
+                    <td
+                        class="{% if log.blood_sugar_mgdl and log.blood_sugar_mgdl > 180 %}text-danger{% elif log.blood_sugar_mgdl and log.blood_sugar_mgdl > 140 %}text-warning{% endif %}">
+                        {{ log.blood_sugar_mgdl ~ ' mg/dL' if log.blood_sugar_mgdl else '—' }}</td>
+                    <td
+                        class="{% if log.heart_rate_bpm and (log.heart_rate_bpm > 100 or log.heart_rate_bpm < 50) %}text-danger{% endif %}">
+                        {{ log.heart_rate_bpm ~ ' bpm' if log.heart_rate_bpm else '—' }}</td>
+                    <td class="{% if log.spo2_pct and log.spo2_pct < 95 %}text-danger{% endif %}">
+                        {{ log.spo2_pct ~ '%' if log.spo2_pct else '—' }}</td>
+                    <td class="{% if log.temperature_c and log.temperature_c > 37.5 %}text-danger{% endif %}">
+                        {{ log.temperature_c ~ '°C' if log.temperature_c else '—' }}</td>
+                    <td>{% if log.health_feeling %}{{ '★'*log.health_feeling }}{{ '☆'*(5-log.health_feeling) }}{% else
+                        %}—{% endif %}</td>
+                    <td>
+                        <form method="POST" action="/health-log/{{ log.id }}/delete" style="display:inline"
+                            onsubmit="return confirm('Delete this entry?')">
+                            <button type="submit" class="btn-icon btn-icon-danger"><i
+                                    class="bi bi-trash3-fill"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted">No health entries yet. Add your first entry!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="addHealthModal">
+    <div class="modal-box modal-box-lg">
+        <div class="modal-header">
+            <h3>Add Health Entry</h3><button class="modal-close" onclick="closeModal('addHealthModal')">×</button>
+        </div>
+        <form method="POST" action="/health-log/add">
+            <div class="form-grid" style="padding:1.5rem">
+                <div class="form-group"><label>Date *</label>
+                    <input type="date" name="log_date" id="log_date" class="form-control" required />
+                </div>
+                <div class="form-group"><label>Weight (kg)</label>
+                    <input type="number" name="weight_kg" class="form-control" step="0.1" min="10" max="300" />
+                </div>
+                <div class="form-group"><label>BP Systolic (mmHg)</label>
+                    <input type="number" name="bp_systolic" class="form-control" min="50" max="250" />
+                </div>
+                <div class="form-group"><label>BP Diastolic (mmHg)</label>
+                    <input type="number" name="bp_diastolic" class="form-control" min="30" max="150" />
+                </div>
+                <div class="form-group"><label>Blood Sugar (mg/dL)</label>
+                    <input type="number" name="blood_sugar_mgdl" class="form-control" min="20" max="600" />
+                </div>
+                <div class="form-group"><label>Heart Rate (bpm)</label>
+                    <input type="number" name="heart_rate_bpm" class="form-control" min="20" max="250" />
+                </div>
+                <div class="form-group"><label>SpO2 (%)</label>
+                    <input type="number" name="spo2_pct" class="form-control" min="70" max="100" />
+                </div>
+                <div class="form-group"><label>Temperature (°C)</label>
+                    <input type="number" name="temperature_c" class="form-control" step="0.1" min="34" max="42" />
+                </div>
+                <div class="form-group"><label>Health Feeling (1–5)</label>
+                    <select name="health_feeling" class="form-control">
+                        <option value="">— select —</option>
+                        <option value="1">1 ★ — Very Unwell</option>
+                        <option value="2">2 ★★ — Unwell</option>
+                        <option value="3">3 ★★★ — Okay</option>
+                        <option value="4">4 ★★★★ — Good</option>
+                        <option value="5">5 ★★★★★ — Great</option>
+                    </select>
+                </div>
+                <div class="form-group form-group-full"><label>Notes</label>
+                    <textarea name="notes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('addHealthModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Entry</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>document.getElementById('log_date').value = new Date().toISOString().split('T')[0];</script>
+{% endblock %}

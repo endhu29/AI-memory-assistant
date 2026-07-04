@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Medicines — ElderCare{% endblock %}
+{% block page_title %}Medicine Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-capsule"></i> Medicines</h2>
+    <button class="btn btn-primary" onclick="openModal('addMedModal')"><i class="bi bi-plus-lg"></i> Add
+        Medicine</button>
+</div>
+
+<h3 class="section-title"><i class="bi bi-clock"></i> Today's Dose Schedule</h3>
+<div class="dose-grid">
+    {% for dose in today_doses %}
+    <div
+        class="dose-card {% if dose.status=='taken' %}dose-taken{% elif dose.status=='missed' %}dose-missed{% endif %}">
+        <div class="dose-name">{{ dose.medicine.name }}</div>
+        <div class="dose-detail">{{ dose.medicine.dosage }}{% if dose.medicine.with_food != 'either' %} · {{
+            dose.medicine.with_food }} food{% endif %}</div>
+        <div class="dose-time"><i class="bi bi-clock"></i> {{ dose.scheduled_dt.strftime('%I:%M %p') }}</div>
+        {% if dose.status == 'pending' %}
+        <form method="POST" action="/medicines/dose/{{ dose.id }}/take">
+            <button type="submit" class="btn btn-success btn-full">Mark as Taken</button>
+        </form>
+        {% elif dose.status == 'taken' %}
+        <div class="dose-status-tag taken"><i class="bi bi-check-circle-fill"></i> Taken at {{
+            dose.taken_at.strftime('%I:%M %p') }}</div>
+        {% else %}
+        <div class="dose-status-tag missed"><i class="bi bi-x-circle-fill"></i> Missed</div>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="text-muted">No doses scheduled for today.</p>
+    {% endfor %}
+</div>
+
+<div class="card" style="margin-top:2rem">
+    <div class="card-header">
+        <h3>All Active Medicines</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Times</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>With Food</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in medicines %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ m.name }}</strong></td>
+                    <td>{{ m.dosage }}</td>
+                    <td>{{ m.frequency.replace('_',' ').title() }}</td>
+                    <td>{{ m.intake_times | replace('"','') | replace('[','') | replace(']','') }}</td>
+                    <td>{{ m.start_date.strftime('%d %b %Y') }}</td>
+                    <td>{{ m.end_date.strftime('%d %b %Y') if m.end_date else '∞' }}</td>
+                    <td>{{ m.with_food.title() }}</td>
+                    <td>
+                        <form method="POST" action="/medicines/{{ m.id }}/delete" style="display:inline"
+                            onsubmit="return confirm('Remove {{ m.name }}?')">
+                            <button type="submit" class="btn-icon btn-icon-danger"><i
+                                    class="bi bi-trash3-fill"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted">No medicines added yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Medicine Modal -->
+<div class="modal-overlay" id="addMedModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Add Medicine</h3><button class="modal-close" onclick="closeModal('addMedModal')">×</button>
+        </div>
+        <form method="POST" action="/medicines/add">
+            <div class="form-grid" style="padding:1.5rem">
+                <div class="form-group"><label>Medicine Name *</label><input type="text" name="name"
+                        class="form-control" required /></div>
+                <div class="form-group"><label>Dosage *</label><input type="text" name="dosage" class="form-control"
+                        placeholder="e.g. 500mg" required /></div>
+                <div class="form-group"><label>Frequency *</label>
+                    <select name="frequency" class="form-control">
+                        <option value="once_daily">Once Daily</option>
+                        <option value="twice_daily">Twice Daily</option>
+                        <option value="thrice_daily">Thrice Daily</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>With Food</label>
+                    <select name="with_food" class="form-control">
+                        <option value="either">Either</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Start Date *</label><input type="date" name="start_date"
+                        class="form-control" required /></div>
+                <div class="form-group"><label>End Date</label><input type="date" name="end_date"
+                        class="form-control" /></div>
+                <div class="form-group form-group-full">
+                    <label>Intake Times *</label>
+                    <div id="timesContainer">
+                        <div class="time-row">
+                            <input type="time" name="intake_times" class="form-control" required />
+                            <button type="button" class="btn btn-sm btn-outline" onclick="addTime()">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group form-group-full"><label>Special Instructions</label>
+                    <textarea name="special_instructions" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group form-group-full form-check">
+                    <input type="checkbox" name="alert_on_miss" id="alert_miss" value="on" checked />
+                    <label for="alert_miss">Email guardian if dose is missed</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('addMedModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Medicine</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function addTime() {
+        const c = document.getElementById('timesContainer');
+        const d = document.createElement('div'); d.className = 'time-row';
+        d.innerHTML = '<input type="time" name="intake_times" class="form-control"/>'
+            + '<button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">−</button>';
+        c.appendChild(d);
+    }
+</script>
+{% endblock %}

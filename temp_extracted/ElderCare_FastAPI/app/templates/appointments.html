@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Appointments — ElderCare{% endblock %}
+{% block page_title %}Doctor Appointments{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-calendar2-check"></i> Appointments</h2>
+    <button class="btn btn-primary" onclick="openModal('addModal')"><i class="bi bi-plus-lg"></i> Add
+        Appointment</button>
+</div>
+
+<!-- Filter -->
+<div class="filter-bar">
+    <form method="GET" action="/appointments" class="filter-form">
+        <label>Status:</label>
+        <select name="status" onchange="this.form.submit()" class="form-control form-control-sm">
+            <option value="all" {% if status_filter=='all' %}selected{% endif %}>All</option>
+            <option value="Scheduled" {% if status_filter=='Scheduled' %}selected{% endif %}>Scheduled</option>
+            <option value="Completed" {% if status_filter=='Completed' %}selected{% endif %}>Completed</option>
+            <option value="Cancelled" {% if status_filter=='Cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Doctor</th>
+                    <th>Speciality</th>
+                    <th>Date & Time</th>
+                    <th>Hospital</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in appointments %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>Dr. {{ a.doctor_name }}</strong></td>
+                    <td>{{ a.speciality or '—' }}</td>
+                    <td>{{ a.appointment_dt.strftime('%d %b %Y, %I:%M %p') }}</td>
+                    <td>{{ a.hospital or '—' }}</td>
+                    <td><span
+                            class="badge {% if a.status=='Scheduled' %}badge-blue{% elif a.status=='Completed' %}badge-green{% else %}badge-grey{% endif %}">{{
+                            a.status }}</span></td>
+                    <td class="actions">
+                        <button class="btn-icon" title="Edit"
+                            data-id="{{ a.id }}"
+                            data-doctor="{{ a.doctor_name }}"
+                            data-spec="{{ a.speciality or '' }}"
+                            data-date="{{ a.appointment_dt.strftime('%Y-%m-%d') }}"
+                            data-time="{{ a.appointment_dt.strftime('%H:%M') }}"
+                            data-hosp="{{ a.hospital or '' }}"
+                            data-status="{{ a.status }}"
+                            data-remind="{{ 'true' if a.send_reminder_email else 'false' }}"
+                            data-notes="{{ a.notes or '' }}"
+                            onclick="openEditModalFromButton(this)">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                        <form method="POST" action="/appointments/{{ a.id }}/remind" style="display:inline">
+                            <button type="submit" class="btn-icon" title="Send Reminder"><i
+                                    class="bi bi-bell-fill"></i></button>
+                        </form>
+                        <form method="POST" action="/appointments/{{ a.id }}/delete" style="display:inline"
+                            onsubmit="return confirm('Cancel this appointment?')">
+                            <button type="submit" class="btn-icon btn-icon-danger"><i
+                                    class="bi bi-x-circle-fill"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted">No appointments found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Add Appointment</h3><button class="modal-close" onclick="closeModal('addModal')">×</button>
+        </div>
+        <form method="POST" action="/appointments/add">
+            <div class="form-grid" style="padding:1.5rem">
+                <div class="form-group"><label>Doctor Name *</label><input type="text" name="doctor_name"
+                        class="form-control" required /></div>
+                <div class="form-group"><label>Speciality</label><input type="text" name="speciality"
+                        class="form-control" /></div>
+                <div class="form-group"><label>Date *</label><input type="date" name="appointment_date"
+                        class="form-control" required /></div>
+                <div class="form-group"><label>Time *</label><input type="time" name="appointment_time"
+                        class="form-control" required /></div>
+                <div class="form-group form-group-full"><label>Hospital / Clinic</label><input type="text"
+                        name="hospital" class="form-control" /></div>
+                <div class="form-group"><label>Status</label>
+                    <select name="status" class="form-control">
+                        <option>Scheduled</option>
+                        <option>Completed</option>
+                        <option>Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group form-group-full"><label>Notes</label><textarea name="notes" class="form-control"
+                        rows="2"></textarea></div>
+                <div class="form-group form-group-full form-check">
+                    <input type="checkbox" name="send_reminder_email" id="remind_add" value="on" />
+                    <label for="remind_add">Send reminder email to guardian (24h before)</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('addModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Edit Appointment</h3><button class="modal-close" onclick="closeModal('editModal')">×</button>
+        </div>
+        <form method="POST" id="editForm">
+            <div class="form-grid" style="padding:1.5rem">
+                <div class="form-group"><label>Doctor Name *</label><input type="text" name="doctor_name" id="e_doc"
+                        class="form-control" required /></div>
+                <div class="form-group"><label>Speciality</label><input type="text" name="speciality" id="e_spec"
+                        class="form-control" /></div>
+                <div class="form-group"><label>Date *</label><input type="date" name="appointment_date" id="e_date"
+                        class="form-control" required /></div>
+                <div class="form-group"><label>Time *</label><input type="time" name="appointment_time" id="e_time"
+                        class="form-control" required /></div>
+                <div class="form-group form-group-full"><label>Hospital</label><input type="text" name="hospital"
+                        id="e_hosp" class="form-control" /></div>
+                <div class="form-group"><label>Status</label>
+                    <select name="status" id="e_status" class="form-control">
+                        <option>Scheduled</option>
+                        <option>Completed</option>
+                        <option>Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group form-group-full"><label>Notes</label><textarea name="notes" id="e_notes"
+                        class="form-control" rows="2"></textarea></div>
+                <div class="form-group form-group-full form-check">
+                    <input type="checkbox" name="send_reminder_email" id="e_remind" value="on" />
+                    <label for="e_remind">Send reminder email to guardian</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openEditModalFromButton(btn) {
+        const d = btn.dataset;
+        document.getElementById('editForm').action = `/appointments/${d.id}/edit`;
+        document.getElementById('e_doc').value = d.doctor;
+        document.getElementById('e_spec').value = d.spec;
+        document.getElementById('e_date').value = d.date;
+        document.getElementById('e_time').value = d.time;
+        document.getElementById('e_hosp').value = d.hosp;
+        document.getElementById('e_status').value = d.status;
+        document.getElementById('e_remind').checked = d.remind === 'true';
+        document.getElementById('e_notes').value = d.notes;
+        openModal('editModal');
+    }
+</script>
+{% endblock %}

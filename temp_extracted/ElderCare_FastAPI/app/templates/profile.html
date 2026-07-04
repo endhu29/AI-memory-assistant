@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Profile — ElderCare{% endblock %}
+{% block page_title %}Elderly Person Profile{% endblock %}
+
+{% block content %}
+<div class="page-header"><h2><i class="bi bi-person-circle"></i> Profile</h2></div>
+
+<form method="POST" action="/profile/save" enctype="multipart/form-data">
+  <div class="card">
+    <div class="card-header"><h3>Personal Information</h3></div>
+    <div class="form-grid" style="padding:1.5rem">
+      <div class="form-group"><label>Full Name *</label>
+        <input type="text" name="full_name" class="form-control" required value="{{ profile.full_name if profile else '' }}"/></div>
+      <div class="form-group"><label>Date of Birth *</label>
+        <input type="date" name="date_of_birth" class="form-control" required
+               value="{{ profile.date_of_birth.strftime('%Y-%m-%d') if profile else '' }}"/></div>
+      <div class="form-group"><label>Gender *</label>
+        <select name="gender" class="form-control">
+          <option {% if profile and profile.gender=='Male' %}selected{% endif %}>Male</option>
+          <option {% if profile and profile.gender=='Female' %}selected{% endif %}>Female</option>
+          <option {% if profile and profile.gender=='Other' %}selected{% endif %}>Other</option>
+        </select></div>
+      <div class="form-group"><label>Blood Group</label>
+        <select name="blood_group" class="form-control">
+          <option value="">—</option>
+          {% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}
+          <option {% if profile and profile.blood_group==bg %}selected{% endif %}>{{ bg }}</option>
+          {% endfor %}
+        </select></div>
+      <div class="form-group"><label>Phone</label>
+        <input type="tel" name="phone" class="form-control" value="{{ profile.phone if profile else '' }}"/></div>
+      <div class="form-group form-group-full"><label>Address</label>
+        <textarea name="address" class="form-control" rows="2">{{ profile.address if profile else '' }}</textarea></div>
+      <div class="form-group form-group-full"><label>Profile Photo</label>
+        {% if profile and profile.photo_path %}
+        <img src="/{{ profile.photo_path }}" alt="Profile"
+             style="height:60px;border-radius:50%;margin-bottom:.5rem;display:block"/>
+        {% endif %}
+        <input type="file" name="photo" class="form-control" accept="image/*"/></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem">
+    <div class="card-header"><h3>Medical Information</h3></div>
+    <div class="form-grid" style="padding:1.5rem">
+      <div class="form-group form-group-full"><label>Known Conditions</label>
+        <input type="text" name="known_conditions" class="form-control"
+               placeholder="e.g. Diabetes, Hypertension" value="{{ profile.known_conditions if profile else '' }}"/></div>
+      <div class="form-group form-group-full"><label>Allergies</label>
+        <textarea name="allergies" class="form-control" rows="2">{{ profile.allergies if profile else '' }}</textarea></div>
+      <div class="form-group"><label>Primary Doctor Name</label>
+        <input type="text" name="primary_doctor_name" class="form-control"
+               value="{{ profile.primary_doctor_name if profile else '' }}"/></div>
+      <div class="form-group"><label>Primary Doctor Phone</label>
+        <input type="tel" name="primary_doctor_phone" class="form-control"
+               value="{{ profile.primary_doctor_phone if profile else '' }}"/></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem">
+    <div class="card-header"><h3>Guardian & Emergency Contact</h3></div>
+    <div class="form-grid" style="padding:1.5rem">
+      <div class="form-group"><label>Guardian Full Name *</label>
+        <input type="text" name="guardian_name" class="form-control" required
+               value="{{ profile.guardian_name if profile else '' }}"/></div>
+      <div class="form-group"><label>Relationship</label>
+        <input type="text" name="guardian_relationship" class="form-control"
+               placeholder="Son, Daughter, Spouse..." value="{{ profile.guardian_relationship if profile else '' }}"/></div>
+      <div class="form-group"><label>Guardian Phone</label>
+        <input type="tel" name="guardian_phone" class="form-control"
+               value="{{ profile.guardian_phone if profile else '' }}"/></div>
+      <div class="form-group"><label>Guardian Email * (used for all alerts)</label>
+        <input type="email" name="guardian_email" class="form-control" required
+               value="{{ profile.guardian_email if profile else '' }}"/></div>
+      <div class="form-group"><label>Emergency Contact Name</label>
+        <input type="text" name="emergency_contact_name" class="form-control"
+               value="{{ profile.emergency_contact_name if profile else '' }}"/></div>
+      <div class="form-group"><label>Emergency Contact Phone</label>
+        <input type="tel" name="emergency_contact_phone" class="form-control"
+               value="{{ profile.emergency_contact_phone if profile else '' }}"/></div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="bi bi-save-fill"></i> Save Profile
+    </button>
+  </div>
+</form>
+{% endblock %}
