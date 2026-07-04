@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ElderCare Assistant{% endblock %}</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/main.css">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <i class="bi bi-heart-pulse-fill"></i>
+        <span>ElderCare</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="{% if request.url.path == '/dashboard' %}active{% endif %}">
+          <a href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        </li>
+        <li class="{% if request.url.path == '/medicines' %}active{% endif %}">
+          <a href="/medicines"><i class="bi bi-capsule"></i> Medicines</a>
+        </li>
+        <li class="{% if request.url.path == '/appointments' %}active{% endif %}">
+          <a href="/appointments"><i class="bi bi-calendar-event"></i> Appointments</a>
+        </li>
+        <li class="{% if request.url.path == '/health-log' %}active{% endif %}">
+          <a href="/health-log"><i class="bi bi-activity"></i> Health Log</a>
+        </li>
+        <li class="{% if request.url.path == '/alerts' %}active{% endif %}">
+          <a href="/alerts"><i class="bi bi-bell"></i> Alerts</a>
+        </li>
+        <li class="{% if request.url.path == '/profile' %}active{% endif %}">
+          <a href="/profile"><i class="bi bi-person-bounding-box"></i> Profile</a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <a href="/logout"><i class="bi bi-box-arrow-right"></i> Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Guardian Alerts — ElderCare{% endblock %}
+{% block page_title %}Guardian Alerts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-bell-fill"></i> Guardian Alerts</h2>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Send Manual Alert to Guardian</h3>
+    </div>
+    <form method="POST" action="/alerts/send">
+        <div class="form-grid" style="padding:1.5rem">
+            <div class="form-group"><label>Recipient Email *</label>
+                <input type="email" name="to_email" class="form-control" required
+                    value="{{ user.profile.guardian_email if user.profile else '' }}" />
+            </div>
+            <div class="form-group"><label>Subject *</label>
+                <input type="text" name="subject" class="form-control" required />
+            </div>
+            <div class="form-group form-group-full"><label>Message *</label>
+                <textarea name="message" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="form-group form-check">
+                <input type="checkbox" name="urgent" id="urgent" value="on" />
+                <label for="urgent">Mark as URGENT</label>
+            </div>
+        </div>
+        <div style="padding:0 1.5rem 1.5rem">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill"></i> Send Alert</button>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top:1.5rem">
+    <div class="card-header">
+        <h3>Notification History</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Sent To</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.created_at.strftime('%d %b %Y %H:%M') }}</td>
+                    <td><span class="badge badge-blue">{{ log.alert_type.replace('_',' ').title() }}</span></td>
+                    <td title="{{ log.message }}">{{ log.message[:80] }}{% if log.message|length > 80 %}…{% endif %}
+                    </td>
+                    <td>{{ log.sent_to_email }}</td>
+                    <td><span class="badge {% if log.status=='sent' %}badge-green{% else %}badge-red{% endif %}">{{
+                            log.status }}</span></td>
+                    <td>{% if log.status=='failed' %}
+                        <form method="POST" action="/alerts/{{ log.id }}/resend" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-outline">Resend</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No alerts sent yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
