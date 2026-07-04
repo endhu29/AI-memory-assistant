@@ -1,0 +1,27 @@
+# Virtual Environment
+.venv/
+
+# Environment Variables
+ElderCare_FastAPI/.env
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Database Files
+*.db
+*.sqlite3
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Logs
+*.log
+
+# Build Files
+build/
+dist/
+*.egg-info/
